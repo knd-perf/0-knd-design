@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReXY Design</title>
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <script type="module" crossorigin src="./assets/index-BGNsZ1w8.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-68i4EL9a.css">
+  <style id="rxy-auth-hide">#root{display:none!important}</style>
+</head>
+  <body>
+    
+<div id="login" style="display:none;position:fixed;inset:0;z-index:99999;flex-direction:column;align-items:center;justify-content:center;gap:0;padding:2rem;background:#07101e">
+  <div style="font-family:system-ui,sans-serif;font-size:10px;font-weight:700;letter-spacing:.3em;color:#2a5aaa;text-transform:uppercase;margin-bottom:3rem">KND Marine · VPP Analysis</div>
+  <div style="width:42px;height:42px;background:#18346a;border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:18px;color:white;letter-spacing:-1px;margin:0 auto 16px;font-family:system-ui,sans-serif">Rx</div>
+  <div style="font-family:system-ui,sans-serif;font-weight:700;font-size:clamp(2rem,7vw,4rem);letter-spacing:-.02em;line-height:1;margin-bottom:.5rem;color:#e8edf5">ReXY Design</div>
+  <div style="font-size:11px;letter-spacing:.2em;color:#4a7cc4;margin-bottom:3.5rem">Race Analysis Report</div>
+  <div id="login-form" style="display:flex;flex-direction:column;align-items:center;gap:1rem;width:100%;max-width:280px">
+    <input id="pwd" type="password" placeholder="Access code" autocomplete="off"
+      style="width:100%;box-sizing:border-box;background:#0d1e42;border:1px solid rgba(74,124,196,.4);color:#e8edf5;font-family:'Courier New',monospace;font-size:18px;letter-spacing:.3em;text-align:center;padding:.875rem 1rem;outline:none;border-radius:4px"/>
+    <button id="login-btn" onclick="tryLogin()"
+      style="width:100%;background:#18346a;color:#fff;border:none;font-family:system-ui,sans-serif;font-weight:700;font-size:12px;letter-spacing:.2em;text-transform:uppercase;padding:.875rem 2rem;cursor:pointer;border-radius:4px">
+      Enter
+    </button>
+  </div>
+  <div id="err" style="font-size:11px;color:#ef4444;letter-spacing:.1em;min-height:16px;text-align:center;margin-top:.75rem;max-width:280px;font-family:system-ui,sans-serif"></div>
+</div>
+
+<div id="root"></div>
+  <script>
+var PASS='TEST2026';
+var KEY='rxy_auth';
+var FAIL_KEY='rxy_fails_'+PASS;
+var LOCK_KEY='rxy_lock_'+PASS;
+var PERM_KEY='rxy_perm_'+PASS;
+function getDelay(n){
+  if(n<=3)return 0;
+  return Math.min(30*Math.pow(2,n-4),7200);
+}
+function startCountdown(sec){
+  var btn=document.getElementById('login-btn');
+  var inp=document.getElementById('pwd');
+  var err=document.getElementById('err');
+  if(btn){btn.disabled=true;btn.style.opacity='0.35';}
+  if(inp){inp.disabled=true;inp.value='';}
+  var t=sec;
+  if(err){err.textContent='Too many attempts — wait '+t+'s';}
+  var iv=setInterval(function(){
+    t--;
+    if(t<=0){
+      clearInterval(iv);
+      if(btn){btn.disabled=false;btn.style.opacity='';}
+      if(inp){inp.disabled=false;}
+      if(err){err.textContent='';}
+    }else{
+      if(err){err.textContent='Too many attempts — wait '+t+'s';}
+    }
+  },1000);
+}
+function showPermanentLock(){
+  var form=document.getElementById('login-form');
+  var err=document.getElementById('err');
+  if(form){form.style.display='none';}
+  if(err){err.textContent='Access blocked. Contact KND Marine to restore access.';}
+}
+function showContent(){
+  var s=document.getElementById('rxy-auth-hide');
+  if(s)s.remove();
+  var login=document.getElementById('login');
+  if(login)login.style.display='none';
+}
+function checkAuth(){
+  if(localStorage.getItem(KEY)===PASS){showContent();return;}
+  document.getElementById('login').style.display='flex';
+  if(localStorage.getItem(PERM_KEY)==='1'){showPermanentLock();return;}
+  var lock=parseInt(localStorage.getItem(LOCK_KEY)||'0');
+  if(lock>Date.now())startCountdown(Math.ceil((lock-Date.now())/1000));
+}
+function tryLogin(){
+  if(localStorage.getItem(PERM_KEY)==='1'){showPermanentLock();return;}
+  var lock=parseInt(localStorage.getItem(LOCK_KEY)||'0');
+  if(lock>Date.now())return;
+  var err=document.getElementById('err');
+  if(document.getElementById('pwd').value===PASS){
+    localStorage.setItem(KEY,PASS);
+    localStorage.removeItem(FAIL_KEY);
+    localStorage.removeItem(LOCK_KEY);
+    localStorage.removeItem(PERM_KEY);
+    showContent();
+  }else{
+    var n=parseInt(localStorage.getItem(FAIL_KEY)||'0')+1;
+    localStorage.setItem(FAIL_KEY,n);
+    if(n>=20){localStorage.setItem(PERM_KEY,'1');showPermanentLock();return;}
+    var d=getDelay(n);
+    if(d>0){
+      localStorage.setItem(LOCK_KEY,Date.now()+d*1000);
+      startCountdown(d);
+    }else{
+      if(err){err.textContent='Incorrect code ('+n+'/3)';}
+      document.getElementById('pwd').value='';
+      setTimeout(function(){if(err)err.textContent='';},2500);
+    }
+  }
+}
+document.addEventListener('DOMContentLoaded',function(){
+  checkAuth();
+  var pwdEl=document.getElementById('pwd');
+  if(pwdEl)pwdEl.addEventListener('keydown',function(e){if(e.key==='Enter')tryLogin();});
+});
+</script>
+</body>
+</html>
